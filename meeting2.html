@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>朝礼 アイデア出しツール</title>
+<script src="https://js.puter.com/v2/"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 60px;
+  }
+
+  h1 { font-size: 1.3rem; font-weight: 700; color: #f1f5f9; margin-bottom: 2px; }
+  .subtitle { font-size: 0.8rem; color: #64748b; margin-bottom: 20px; }
+
+  .card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 18px 20px;
+    width: 100%;
+    max-width: 720px;
+    margin-bottom: 12px;
+  }
+  .section-label {
+    font-size: 0.72rem; color: #94a3b8; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;
+  }
+
+  details.setup { width: 100%; max-width: 720px; margin-bottom: 12px; }
+  details.setup > summary {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    padding: 12px 18px; cursor: pointer; font-size: 0.85rem; color: #94a3b8;
+    list-style: none; display: flex; align-items: center; gap: 8px;
+  }
+  details.setup > summary::-webkit-details-marker { display: none; }
+  details.setup[open] > summary { border-radius: 12px 12px 0 0; border-bottom: none; }
+  details.setup > .setup-body {
+    background: #1e293b; border: 1px solid #334155; border-top: none;
+    border-radius: 0 0 12px 12px; padding: 16px 20px;
+  }
+  .setup-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .setup-row:last-child { margin-bottom: 0; }
+  input[type="password"] {
+    flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+    color: #e2e8f0; padding: 8px 12px; font-size: 0.88rem; outline: none;
+  }
+  input[type="password"]:focus { border-color: #6366f1; }
+  .badge { font-size: 0.7rem; padding: 3px 8px; border-radius: 99px; font-weight: 600; white-space: nowrap; }
+  .badge-ok { background: #14532d; color: #4ade80; }
+  .badge-ng { background: #450a0a; color: #f87171; }
+  .btn-small {
+    background: #1e3a5f; border: 1px solid #1e40af; color: #60a5fa;
+    border-radius: 8px; padding: 8px 14px; font-size: 0.85rem; font-weight: 600;
+    font-family: inherit; cursor: pointer; white-space: nowrap;
+  }
+  .btn-small:hover { background: #1e40af; }
+
+  .btn-capture {
+    width: 100%; max-width: 720px;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    background: #1a3a2a; border: 2px solid #166534; color: #4ade80;
+    border-radius: 16px; padding: 18px;
+    font-size: 1.1rem; font-weight: 800; font-family: inherit;
+    cursor: pointer; transition: all 0.2s; margin-bottom: 12px;
+  }
+  .btn-capture:hover { background: #166534; }
+  .btn-capture.active {
+    background: #1a0a0a; border-color: #7f1d1d; color: #f87171;
+    animation: pulseBtn 2s ease-in-out infinite;
+  }
+  @keyframes pulseBtn {
+    0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.2); }
+    50% { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+  }
+  .capture-dot {
+    width: 12px; height: 12px; border-radius: 50%; background: currentColor;
+  }
+  .btn-capture.active .capture-dot { animation: blink 1s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .live-box {
+    width: 100%; max-width: 720px; box-sizing: border-box;
+    background: #111827; border: 1px solid #1e3a5f;
+    border-radius: 12px; padding: 14px 16px;
+    min-height: 80px; max-height: 160px; overflow-y: auto;
+    font-size: 0.88rem; color: #60a5fa; line-height: 1.7;
+    word-break: break-all; resize: vertical;
+    font-family: inherit;
+    margin-bottom: 4px;
+    display: none;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .live-box:focus {
+    border-color: #3b82f6;
+    background: #0f172a;
+  }
+  .live-box.visible { display: block; }
+  .live-meta { display: flex; justify-content: space-between; font-size: 0.72rem; color: #334155; margin-top: 4px; }
+
+  .btn-generate-big {
+    width: 100%; max-width: 720px;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: white; border: none; border-radius: 18px;
+    padding: 24px; font-size: 1.4rem; font-weight: 900;
+    font-family: inherit; cursor: pointer; transition: all 0.15s;
+    margin-bottom: 8px; letter-spacing: 0.02em;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+  }
+  .btn-generate-big:hover:not(:disabled) {
+    opacity: 0.9; transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(99,102,241,0.4);
+  }
+  .btn-generate-big:disabled { opacity: 0.3; cursor: not-allowed; transform: none; box-shadow: none; }
+  .shortcut-hint {
+    font-size: 0.75rem; color: #818cf8; text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .topic-banner {
+    width: 100%; max-width: 720px;
+    background: #1e293b; border-left: 3px solid #6366f1;
+    border-radius: 0 8px 8px 0; padding: 10px 16px;
+    font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px; line-height: 1.5;
+  }
+  .topic-banner strong { color: #a5b4fc; }
+  .ideas-container { width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 10px; }
+  .idea-card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 13px;
+    padding: 18px 20px; display: flex; gap: 14px; align-items: flex-start;
+    opacity: 0; transform: translateY(10px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+  .idea-card.visible { opacity: 1; transform: translateY(0); }
+  .idea-num {
+    min-width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 0.9rem; flex-shrink: 0;
+  }
+  .n1{background:#1e3a5f;color:#60a5fa}
+  .n2{background:#2d1b69;color:#a78bfa}
+  .n3{background:#14292a;color:#34d399}
+  .n4{background:#3b1f0e;color:#fb923c}
+  .n5{background:#3b0f2a;color:#f472b6}
+  .idea-title { font-size: 1rem; font-weight: 700; color: #f1f5f9; margin-bottom: 8px; }
+  .idea-desc { font-size: 0.88rem; color: #94a3b8; line-height: 1.75; white-space: pre-wrap; }
+  .idea-time { font-size: 0.72rem; color: #475569; margin-top: 6px; }
+
+  .loading-card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 13px; padding: 32px;
+    text-align: center; color: #64748b; font-size: 0.9rem; width: 100%; max-width: 720px;
+  }
+  .spinner {
+    width: 28px; height: 28px; border: 3px solid #334155; border-top-color: #6366f1;
+    border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-msg {
+    background: #450a0a; border: 1px solid #7f1d1d; border-radius: 10px;
+    padding: 12px 16px; color: #fca5a5; font-size: 0.85rem;
+    width: 100%; max-width: 720px;
+  }
+
+  details.sub { width: 100%; max-width: 720px; margin-top: 16px; }
+  details.sub > summary {
+    font-size: 0.78rem; color: #475569; cursor: pointer; padding: 4px 0;
+    list-style: none; display: flex; align-items: center; gap: 6px;
+  }
+  details.sub > summary::-webkit-details-marker { display: none; }
+  details.sub > .sub-body { margin-top: 10px; }
+
+  .file-drop-zone {
+    border: 1.5px dashed #334155; border-radius: 10px; padding: 16px;
+    text-align: center; cursor: pointer; color: #475569; font-size: 0.85rem;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .file-drop-zone:hover, .file-drop-zone.drag-over { border-color: #6366f1; background: #1a1f35; color: #a5b4fc; }
+  .file-drop-zone input[type="file"] { display: none; }
+  .btn-transcribe {
+    width: 100%; margin-top: 8px;
+    background: #1e3a5f; border: 1.5px solid #1e40af; color: #60a5fa;
+    border-radius: 8px; padding: 9px; font-size: 0.88rem; font-weight: 700;
+    font-family: inherit; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-transcribe:hover:not(:disabled) { background: #1e40af; }
+  .btn-transcribe:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .ref-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .ref-item {
+    background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+    padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem;
+  }
+  .ref-item-name { color: #94a3b8; }
+  .ref-ok { color: #4ade80; font-size: 0.75rem; }
+  .ref-loading { color: #60a5fa; font-size: 0.75rem; }
+  .ref-error { color: #f87171; font-size: 0.75rem; }
+  .ref-del { background: none; border: none; color: #475569; cursor: pointer; font-size: 0.8rem; padding: 2px 6px; }
+  .ref-del:hover { color: #f87171; }
+</style>
+</head>
+<body>
+
+<h1>💡 朝礼 アイデア出しツール</h1>
+<p class="subtitle">Meetで音声を聴きながら → お題が出たらSpaceキーを押すだけで5案を即表示</p>
+
+<!-- ─── 設定（折りたたみ） ─── -->
+<details class="setup" id="setupDetails">
+  <summary>
+    ⚙️ 初期設定（最初に一度だけ）
+    <span id="setupBadge" style="margin-left:auto;font-size:0.72rem;color:#475569;">未設定</span>
+  </summary>
+  <div class="setup-body">
+
+    <div class="setup-row">
+      <span style="font-size:0.82rem;color:#94a3b8;min-width:180px;">① Puter（音声文字起こし・無料）</span>
+      <button class="btn-small" onclick="puterLogin()">Puterにログイン</button>
+      <span id="puterStatus" style="font-size:0.75rem;color:#475569;">未ログイン</span>
+    </div>
+
+    <div class="setup-row" style="margin-top:4px;">
+      <span style="font-size:0.82rem;color:#94a3b8;min-width:180px;">② Anthropic APIキー（案出し）</span>
+      <input type="password" id="apiKey" placeholder="sk-ant-..." oninput="checkKey()" style="max-width:300px;">
+      <span class="badge" id="keyBadge" style="opacity:0">OK</span>
+    </div>
+    <p style="font-size:0.72rem;color:#334155;margin-top:4px;">APIキーはページを閉じると消えます。</p>
+
+  </div>
+</details>
+
+<!-- ─── Step 1：音声キャプチャ開始 ─── -->
+<button class="btn-capture" id="captureBtn" onclick="toggleCapture()">
+  <span class="capture-dot"></span>
+  <span id="captureLabel">① まずここを押す — Meetタブの音声を共有する</span>
+</button>
+
+<div id="chunkStatus" style="display:none;width:100%;max-width:720px;font-size:0.78rem;padding:6px 12px;border-radius:8px;margin-bottom:8px;"></div>
+
+<div style="width:100%;max-width:720px;position:relative;">
+  <textarea id="liveBox" class="live-box"
+    placeholder="音声を認識するとここに表示されます…&#10;✏️ 間違いがあれば直接編集できます（例：他社→他者）"
+    oninput="syncTranscriptFromBox()"></textarea>
+  <div style="position:absolute;top:8px;right:10px;font-size:0.68rem;color:#475569;pointer-events:none;background:#111827;padding:2px 6px;border-radius:4px;">✏️ 編集可</div>
+</div>
+<div class="live-meta" id="liveMeta" style="display:none;width:100%;max-width:720px;">
+  <span id="liveChars">0 文字 蓄積中</span>
+  <button onclick="clearTranscript()" style="font-size:0.72rem;color:#475569;background:none;border:none;cursor:pointer;">クリア</button>
+</div>
+
+<!-- ─── Step 2：案出しボタン（巨大） ─── -->
+<button class="btn-generate-big" id="genBtn" onclick="generate()">
+  ⚡ お題が出たら押す！
+</button>
+<p class="shortcut-hint">キーボードの <strong>Spaceキー</strong> でも即座に生成できます</p>
+
+<div id="output" style="width:100%;max-width:720px;"></div>
+
+<!-- ─── 参考データ蓄積エリア ─── -->
+<details class="sub" id="historyDetails" open>
+  <summary>📚 参考データ（過去の履歴・事例）— <span id="historyCount" style="color:#4ade80;">0 文字蓄積済み</span></summary>
+  <div class="sub-body card" style="border-color:#2d4a22;">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div class="section-label" style="margin-bottom:0;">📝 追記エリア（新しいデータを貼り付けて追加）</div>
+      <span id="historyDate" style="font-size:0.72rem;color:#475569;"></span>
+    </div>
+
+    <!-- Google Drive URL読み込み -->
+    <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #2d4a22;">
+      <div style="font-size:0.75rem;color:#4ade80;font-weight:700;margin-bottom:6px;">🔗 GoogleドライブフォルダURLから自動読み込み</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <input type="text" id="driveUrlInput"
+          placeholder="https://drive.google.com/drive/folders/..."
+          style="flex:1;min-width:200px;background:#0f172a;border:1px solid #2d4a22;border-radius:8px;color:#e2e8f0;padding:8px 12px;font-size:0.82rem;outline:none;"
+          oninput="localStorage.setItem('driveUrl', this.value)">
+        <button class="btn-small" style="background:#1a2e1a;border-color:#2d4a22;color:#4ade80;" onclick="loadFromDriveUrl()">
+          📂 読み込む
+        </button>
+      </div>
+      <div id="driveUrlStatus" style="font-size:0.75rem;color:#475569;margin-top:6px;"></div>
+
+      <!-- GASから配信されていない場合のみApps Script URL入力欄を表示 -->
+      <div id="appsScriptInputWrapper" style="margin-top:8px;">
+        <div style="font-size:0.72rem;color:#334155;margin-top:4px;">
+          ※ <a href="https://script.google.com" target="_blank" style="color:#3b82f6;">Google Apps Script</a> の設定が必要です（<span style="cursor:pointer;text-decoration:underline dotted;color:#475569;" onclick="toggleAppsScriptHelp()">設定方法を見る</span>）
+        </div>
+        <div id="appsScriptInput" style="margin-top:8px;display:none;">
+          <div style="font-size:0.75rem;color:#94a3b8;margin-bottom:4px;">Apps Script Web App URL</div>
+          <input type="text" id="appsScriptUrl"
+            placeholder="https://script.google.com/macros/s/.../exec"
+            style="width:100%;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:8px 12px;font-size:0.82rem;outline:none;"
+            oninput="localStorage.setItem('appsScriptUrl', this.value)">
+        </div>
+        <div id="appsScriptHelp" style="display:none;margin-top:8px;background:#0f172a;border:1px solid #1e3a5f;border-radius:8px;padding:12px;font-size:0.78rem;color:#60a5fa;line-height:1.8;">
+          <strong>【一度だけの設定】</strong><br>
+          ① <a href="https://script.google.com" target="_blank" style="color:#60a5fa;">script.google.com</a> を開く<br>
+          ② 「新しいプロジェクト」をクリック<br>
+          ③ gas_code.gs の内容を貼り付けて保存（Ctrl+S）<br>
+          ④ 「デプロイ」→「新しいデプロイ」→ 種類：ウェブアプリ<br>
+          ⑤ 「次のユーザーとして実行」：自分、「アクセスできるユーザー」：<strong>全員</strong><br>
+          ⑥ デプロイ → 表示されたURLを上の欄に貼り付ける
+        </div>
+      </div>
+    </div>
+
+    <!-- テキストファイルドロップ -->
+    <div id="textDropZone"
+      style="border:1.5px dashed #2d4a22;border-radius:10px;padding:14px;text-align:center;color:#475569;font-size:0.85rem;cursor:pointer;margin-bottom:8px;transition:all 0.2s;"
+      onclick="document.getElementById('textFileInput').click()"
+      ondragover="onTextDragOver(event)" ondragleave="onTextDragLeave(event)" ondrop="onTextDrop(event)">
+      <input type="file" id="textFileInput" accept=".txt,.text,.docx" style="display:none" onchange="onTextFileSelect(event)">
+      📄 .txt / .docx ファイルをここにドラッグ＆ドロップ（またはクリックして選択）
+    </div>
+
+    <div style="text-align:center;font-size:0.75rem;color:#334155;margin-bottom:8px;">または テキストを直接貼り付け ↓</div>
+
+    <textarea id="historyInput"
+      placeholder="Googleドキュメントの内容をここにコピー&ペーストしてください。"
+      style="width:100%;background:#0f172a;border:1px solid #2d4a22;border-radius:10px;color:#e2e8f0;padding:12px 14px;font-size:0.85rem;font-family:inherit;resize:vertical;min-height:80px;outline:none;line-height:1.6;"
+    ></textarea>
+
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+      <button class="btn-small" style="background:#1a2e1a;border-color:#2d4a22;color:#4ade80;" onclick="appendHistory()">
+        ＋ 追記する（既存データに追加）
+      </button>
+      <button class="btn-small" style="background:#1a2e1a;border-color:#2d4a22;color:#4ade80;" onclick="replaceHistory()">
+        ↺ 上書きする（全データを入替）
+      </button>
+      <button class="btn-small" style="background:#2a1a1a;border-color:#7f1d1d;color:#f87171;margin-left:auto;" onclick="clearHistory()">
+        🗑 全データを削除
+      </button>
+    </div>
+
+    <div id="historyMsg" style="font-size:0.78rem;margin-top:8px;color:#4ade80;display:none;"></div>
+
+    <details style="margin-top:12px;">
+      <summary style="font-size:0.75rem;color:#475569;cursor:pointer;">蓄積済みデータを確認する</summary>
+      <div id="historyPreview"
+        style="margin-top:8px;background:#0f172a;border:1px solid #1e3a1e;border-radius:8px;padding:10px 12px;max-height:200px;overflow-y:auto;font-size:0.78rem;color:#64748b;white-space:pre-wrap;line-height:1.6;">
+        データなし
+      </div>
+    </details>
+
+  </div>
+</details>
+
+<details class="sub">
+  <summary>🧪 テスト用：音声ファイルで文字起こしする</summary>
+  <div class="sub-body card">
+    <div class="section-label">音声ファイルをアップロード</div>
+    <div class="file-drop-zone" id="dropZone"
+         onclick="document.getElementById('audioFile').click()"
+         ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+      <input type="file" id="audioFile" accept="audio/*,video/webm" onchange="onFileSelect(event)">
+      クリックまたはドラッグ＆ドロップ（mp3, m4a, wav など）
+    </div>
+    <div id="fileName" style="font-size:0.78rem;color:#4ade80;margin-top:6px;"></div>
+    <button class="btn-transcribe" id="transcribeBtn" onclick="transcribeFile()" disabled>
+      ▶ この音声を文字起こしする
+    </button>
+    <div id="transcribeMsg" style="font-size:0.82rem;margin-top:8px;color:#94a3b8;"></div>
+  </div>
+</details>
+
+<details class="sub">
+  <summary>📚 過去の回答事例を登録して回答の質を上げる</summary>
+  <div class="sub-body card">
+    <div class="section-label">参考事例（音声ファイルを複数登録可）</div>
+    <p style="font-size:0.78rem;color:#64748b;margin-bottom:8px;">過去の朝礼でよかった回答音声を登録するとAIが参考にします。</p>
+    <button class="btn-small" onclick="document.getElementById('refInput').click()">＋ 参考音声を追加</button>
+    <input type="file" id="refInput" accept="audio/*" style="display:none" onchange="addRefFile(event)">
+    <div class="ref-list" id="refList"></div>
+    <div id="refStatus" style="font-size:0.75rem;color:#475569;margin-top:6px;"></div>
+  </div>
+</details>
+
+<script>
+puter.quiet = true;
+
+// ── Apps Script URL の自動検出 ──────────────────────
+// GASから配信されている場合、自分自身のURLをエンドポイントとして使う
+function getAppsScriptEndpoint() {
+  const currentUrl = window.location.href;
+  // script.google.com から配信されている場合は自動検出
+  if (currentUrl.includes('script.google.com')) {
+    const baseUrl = currentUrl.split('?')[0];
+    // Apps Script URLのラッパーページから実際のexec URLを取得
+    // /dev または /exec で終わるURLを使う
+    return baseUrl;
+  }
+  // ローカル動作時は保存済みURLを使う
+  return localStorage.getItem('appsScriptUrl') || '';
+}
+
+// ── 参考データ蓄積 ──
+const HISTORY_KEY = 'accumulatedHistory';
+
+function loadHistory() {
+  const data = localStorage.getItem(HISTORY_KEY) || '';
+  const date = localStorage.getItem(HISTORY_KEY + '_date') || '';
+  updateHistoryUI(data, date);
+  return data;
+}
+
+function updateHistoryUI(data, date) {
+  const count = data.length;
+  document.getElementById('historyCount').textContent = count.toLocaleString() + ' 文字蓄積済み';
+  document.getElementById('historyDate').textContent = date ? '最終更新：' + date : '';
+  document.getElementById('historyPreview').textContent = data || 'データなし';
+}
+
+function appendHistory() {
+  const input = document.getElementById('historyInput').value.trim();
+  if (!input) { showHistoryMsg('貼り付けるデータを入力してください', '#f87171'); return; }
+  const existing = localStorage.getItem(HISTORY_KEY) || '';
+  const today = new Date().toLocaleDateString('ja-JP');
+  const newData = existing + (existing ? '\n\n--- ' + today + ' 追記 ---\n' : '') + input;
+  localStorage.setItem(HISTORY_KEY, newData);
+  localStorage.setItem(HISTORY_KEY + '_date', today);
+  document.getElementById('historyInput').value = '';
+  updateHistoryUI(newData, today);
+  showHistoryMsg('✅ 追記しました！（合計 ' + newData.length.toLocaleString() + ' 文字）', '#4ade80');
+}
+
+function replaceHistory() {
+  const input = document.getElementById('historyInput').value.trim();
+  if (!input) { showHistoryMsg('貼り付けるデータを入力してください', '#f87171'); return; }
+  if (!confirm('既存の蓄積データをすべて新しい内容に上書きします。よいですか？')) return;
+  const today = new Date().toLocaleDateString('ja-JP');
+  localStorage.setItem(HISTORY_KEY, input);
+  localStorage.setItem(HISTORY_KEY + '_date', today);
+  document.getElementById('historyInput').value = '';
+  updateHistoryUI(input, today);
+  showHistoryMsg('✅ 上書きしました（' + input.length.toLocaleString() + ' 文字）', '#4ade80');
+}
+
+function clearHistory() {
+  if (!confirm('蓄積済みの参考データをすべて削除します。よいですか？')) return;
+  localStorage.removeItem(HISTORY_KEY);
+  localStorage.removeItem(HISTORY_KEY + '_date');
+  updateHistoryUI('', '');
+  showHistoryMsg('削除しました', '#f87171');
+}
+
+// ── Google Drive URL 読み込み ──
+function toggleAppsScriptHelp() {
+  const help = document.getElementById('appsScriptHelp');
+  const input = document.getElementById('appsScriptInput');
+  const show = help.style.display === 'none';
+  help.style.display = show ? 'block' : 'none';
+  input.style.display = show ? 'block' : 'none';
+}
+
+async function loadFromDriveUrl() {
+  const folderUrl = document.getElementById('driveUrlInput').value.trim();
+  const statusEl = document.getElementById('driveUrlStatus');
+
+  // Apps Script エンドポイントを自動検出または保存値から取得
+  const appsScriptUrl = getAppsScriptEndpoint();
+
+  if (!folderUrl || !folderUrl.includes('drive.google.com')) {
+    statusEl.style.color = '#f87171';
+    statusEl.textContent = '⚠️ GoogleドライブのフォルダURLを入力してください';
+    return;
+  }
+  if (!appsScriptUrl) {
+    statusEl.style.color = '#f87171';
+    statusEl.textContent = '⚠️ Apps Script URLが未設定です。設定方法を開いて設定してください';
+    document.getElementById('appsScriptHelp').style.display = 'block';
+    document.getElementById('appsScriptInput').style.display = 'block';
+    return;
+  }
+
+  statusEl.style.color = '#60a5fa';
+  statusEl.textContent = '📂 フォルダを読み込み中…';
+
+  try {
+    const res = await fetch(`${appsScriptUrl}?folderUrl=${encodeURIComponent(folderUrl)}`);
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+    if (!data.text) throw new Error('ファイルが見つかりませんでした');
+
+    const existing = localStorage.getItem(HISTORY_KEY) || '';
+    const today = new Date().toLocaleDateString('ja-JP');
+    const newData = existing + (existing ? '\n\n--- ' + today + ' Driveより読込 ---\n' : '') + data.text;
+    localStorage.setItem(HISTORY_KEY, newData);
+    localStorage.setItem(HISTORY_KEY + '_date', today);
+    updateHistoryUI(newData, today);
+
+    statusEl.style.color = '#4ade80';
+    statusEl.textContent = `✅ ${data.files?.length || '?'}件 読込完了（${data.updated}）：${(data.files||[]).join('、')}`;
+  } catch (e) {
+    statusEl.style.color = '#f87171';
+    statusEl.textContent = '⚠️ ' + e.message;
+  }
+}
+
+// ── テキストファイル読み込み ──
+function onTextDragOver(e) {
+  e.preventDefault();
+  document.getElementById('textDropZone').style.borderColor = '#4ade80';
+  document.getElementById('textDropZone').style.background = '#0f2a1a';
+  document.getElementById('textDropZone').style.color = '#4ade80';
+}
+function onTextDragLeave() {
+  document.getElementById('textDropZone').style.borderColor = '#2d4a22';
+  document.getElementById('textDropZone').style.background = '';
+  document.getElementById('textDropZone').style.color = '#475569';
+}
+function onTextDrop(e) {
+  e.preventDefault();
+  onTextDragLeave();
+  const file = e.dataTransfer.files[0];
+  if (file) readTextFile(file);
+}
+function onTextFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) readTextFile(file);
+  e.target.value = '';
+}
+function readTextFile(file) {
+  if (file.name.match(/\.docx$/i)) {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        showHistoryMsg('📄 Wordファイルを読み込み中…', '#60a5fa');
+        const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+        const text = result.value.trim();
+        if (!text) { showHistoryMsg('⚠️ ファイルが空です', '#f87171'); return; }
+        document.getElementById('historyInput').value = text;
+        showHistoryMsg(`✅ 「${file.name}」を読み込みました（${text.length}文字）。「＋ 追記する」を押して保存してください。`, '#60a5fa');
+      } catch(err) {
+        showHistoryMsg('⚠️ Wordファイルの読み込みに失敗しました：' + err.message, '#f87171');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  } else if (file.name.match(/\.(txt|text)$/i)) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result.trim();
+      if (!text) { showHistoryMsg('⚠️ ファイルが空です', '#f87171'); return; }
+      document.getElementById('historyInput').value = text;
+      showHistoryMsg(`✅ 「${file.name}」を読み込みました（${text.length}文字）。「＋ 追記する」を押して保存してください。`, '#60a5fa');
+    };
+    reader.readAsText(file, 'UTF-8');
+  } else {
+    showHistoryMsg('⚠️ .txt または .docx ファイルのみ対応しています', '#f87171');
+  }
+}
+
+function showHistoryMsg(msg, color) {
+  const el = document.getElementById('historyMsg');
+  el.textContent = msg;
+  el.style.color = color;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
+// ── 状態 ──
+let apiKey = '';
+let isCapturing = false;
+let displayStream = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let liveTranscript = '';
+let chunkTimer = null;
+let referenceTranscripts = [];
+let referenceFiles = [];
+
+const CHUNK_MS = 6000;
+
+window.addEventListener('load', () => {
+  loadHistory();
+  const savedUrl = localStorage.getItem('appsScriptUrl');
+  if (savedUrl) document.getElementById('appsScriptUrl').value = savedUrl;
+  const savedDriveUrl = localStorage.getItem('driveUrl');
+  if (savedDriveUrl) document.getElementById('driveUrlInput').value = savedDriveUrl;
+
+  // GASから配信されている場合はApps Script URL入力欄を非表示
+  if (window.location.href.includes('script.google.com')) {
+    document.getElementById('appsScriptInputWrapper').style.display = 'none';
+  }
+});
+
+// ── 初期設定 ──
+function checkKey() {
+  apiKey = document.getElementById('apiKey').value.trim();
+  const badge = document.getElementById('keyBadge');
+  const ok = apiKey.startsWith('sk-ant-') && apiKey.length > 20;
+  badge.textContent = ok ? '✓ 設定済み' : '形式が違います';
+  badge.className = 'badge ' + (ok ? 'badge-ok' : 'badge-ng');
+  badge.style.opacity = apiKey.length > 0 ? '1' : '0';
+  updateSetupBadge();
+}
+
+async function puterLogin() {
+  const el = document.getElementById('puterStatus');
+  try {
+    el.style.color = '#60a5fa';
+    el.textContent = 'ログイン中…';
+    await puter.auth.signIn();
+    const user = await puter.auth.getUser();
+    el.style.color = '#4ade80';
+    el.textContent = '✅ ' + (user?.username || 'ログイン済み');
+    updateSetupBadge();
+  } catch (e) {
+    el.style.color = '#f87171';
+    el.textContent = '失敗: ' + e.message;
+  }
+}
+
+function updateSetupBadge() {
+  const badge = document.getElementById('setupBadge');
+  const keyOk = apiKey.startsWith('sk-ant-') && apiKey.length > 20;
+  const puterOk = document.getElementById('puterStatus').textContent.startsWith('✅');
+  if (keyOk && puterOk) {
+    badge.textContent = '✅ 設定完了';
+    badge.style.color = '#4ade80';
+    document.getElementById('setupDetails').removeAttribute('open');
+  } else {
+    badge.textContent = '要設定';
+    badge.style.color = '#f87171';
+  }
+}
+
+// ── 音声キャプチャ ──
+async function toggleCapture() {
+  if (isCapturing) { stopCapture(); } else { await startCapture(); }
+}
+
+async function startCapture() {
+  try {
+    displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+    const audioTracks = displayStream.getAudioTracks();
+    if (audioTracks.length === 0) {
+      alert('音声が取得できませんでした。\nタブ選択時に「タブの音声を共有」にチェックを入れてください。');
+      displayStream.getTracks().forEach(t => t.stop());
+      displayStream = null;
+      return;
+    }
+    const audioStream = new MediaStream(audioTracks);
+    const vt = displayStream.getVideoTracks()[0];
+    if (vt) vt.addEventListener('ended', () => stopCapture());
+
+    isCapturing = true;
+    setCaptureUI(true);
+    scheduleChunk(audioStream);
+  } catch (e) {
+    if (e.name !== 'AbortError' && e.name !== 'NotAllowedError') {
+      alert('エラー: ' + e.message);
+    }
+  }
+}
+
+function stopCapture() {
+  isCapturing = false;
+  if (chunkTimer) { clearTimeout(chunkTimer); chunkTimer = null; }
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  if (displayStream) { displayStream.getTracks().forEach(t => t.stop()); displayStream = null; }
+  setCaptureUI(false);
+}
+
+function setCaptureUI(on) {
+  const btn = document.getElementById('captureBtn');
+  const label = document.getElementById('captureLabel');
+  const liveBox = document.getElementById('liveBox');
+  const liveMeta = document.getElementById('liveMeta');
+  if (on) {
+    btn.classList.add('active');
+    label.textContent = '🔴 音声を認識中 — タップして停止';
+    liveBox.classList.add('visible');
+    liveMeta.style.display = 'flex';
+  } else {
+    btn.classList.remove('active');
+    label.textContent = '① まずここを押す — Meetタブの音声を共有する';
+    liveBox.classList.remove('visible');
+    liveMeta.style.display = 'none';
+  }
+}
+
+function getBestMimeType() {
+  const types = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'];
+  for (const t of types) {
+    if (MediaRecorder.isTypeSupported(t)) return t;
+  }
+  return 'audio/webm';
+}
+
+function scheduleChunk(audioStream) {
+  if (!isCapturing) return;
+  audioChunks = [];
+  const mimeType = getBestMimeType();
+  mediaRecorder = new MediaRecorder(audioStream, { mimeType });
+  mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) audioChunks.push(e.data); };
+  mediaRecorder.onstop = async () => {
+    if (audioChunks.length > 0 && isCapturing) {
+      const blob = new Blob(audioChunks, { type: mimeType });
+      if (blob.size < 1000) {
+        setChunkStatus('🔄 音声を待機中…（声が聞こえたら文字起こしされます）', 'info');
+        if (isCapturing) scheduleChunk(audioStream);
+        return;
+      }
+      await transcribeLive(blob, mimeType);
+    }
+    if (isCapturing) scheduleChunk(audioStream);
+  };
+  mediaRecorder.start();
+  chunkTimer = setTimeout(() => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+  }, CHUNK_MS);
+}
+
+function setChunkStatus(msg, color) {
+  const el = document.getElementById('chunkStatus');
+  el.style.display = 'block';
+  el.style.background = color === 'ok' ? '#14292a' : color === 'err' ? '#450a0a' : '#1e2a3a';
+  el.style.color = color === 'ok' ? '#4ade80' : color === 'err' ? '#f87171' : '#60a5fa';
+  el.style.border = '1px solid ' + (color === 'ok' ? '#166534' : color === 'err' ? '#7f1d1d' : '#1e3a5f');
+  el.textContent = msg;
+}
+
+async function transcribeLive(blob, mimeType) {
+  try {
+    const isSignedIn = await puter.auth.isSignedIn();
+    if (!isSignedIn) {
+      setChunkStatus('⚠️ Puterのログインが切れています。⚙️初期設定から再ログインしてください。', 'err');
+      return;
+    }
+    setChunkStatus('🔄 文字起こし処理中…（6秒ごとに更新）', 'info');
+    const file = new File([blob], 'audio.webm', { type: mimeType });
+    const result = await puter.ai.speech2txt(file, { language: 'ja' });
+    const text = (typeof result === 'string' ? result : result?.text || '').trim();
+    if (text) {
+      liveTranscript += (liveTranscript ? ' ' : '') + text;
+      renderLive();
+      setChunkStatus('✅ 文字起こし中（' + liveTranscript.length + '文字蓄積済み）', 'ok');
+    } else {
+      setChunkStatus('🔄 音声を待機中…（声が聞こえたら文字起こしされます）', 'info');
+    }
+  } catch (e) {
+    setChunkStatus('⚠️ 文字起こしエラー：' + e.message + '　→ ⚙️初期設定でPuterに再ログインしてください', 'err');
+  }
+}
+
+function renderLive() {
+  const box = document.getElementById('liveBox');
+  if (document.activeElement !== box) {
+    box.value = liveTranscript || '';
+    box.scrollTop = box.scrollHeight;
+  }
+  document.getElementById('liveChars').textContent = liveTranscript.length + ' 文字 蓄積中';
+}
+
+function syncTranscriptFromBox() {
+  liveTranscript = document.getElementById('liveBox').value;
+  document.getElementById('liveChars').textContent = liveTranscript.length + ' 文字 蓄積中';
+}
+
+function clearTranscript() {
+  liveTranscript = '';
+  renderLive();
+  document.getElementById('output').innerHTML = '';
+}
+
+// ── アイデア生成 ──
+async function generate() {
+  const output = document.getElementById('output');
+  const btn = document.getElementById('genBtn');
+
+  if (!apiKey || !apiKey.startsWith('sk-ant-')) {
+    output.innerHTML = '<div class="error-msg">⚠️ 初期設定のAPIキーを入力してください（⚙️ 初期設定を開く）。</div>';
+    document.getElementById('setupDetails').setAttribute('open', '');
+    return;
+  }
+  if (!liveTranscript.trim()) {
+    output.innerHTML = '<div class="error-msg">⚠️ まだ音声が認識されていません。① のボタンを押してMeetのタブ音声を共有してください。</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  output.innerHTML = '<div class="loading-card"><div class="spinner"></div>お題を読み取って回答を生成中…</div>';
+
+  const historyData = localStorage.getItem(HISTORY_KEY) || '';
+  const historySection = historyData
+    ? '\n\n【蓄積された過去の履歴・回答事例・行動指針（これを最重要参考資料として活用すること）】\n' + historyData
+    : '';
+
+  const refSection = referenceTranscripts.length > 0
+    ? '\n\n【過去の優れた回答事例（スタイル・詳しさを参考に）】\n' +
+      referenceTranscripts.map((r, i) => `--- 事例${i+1} ---\n${r}`).join('\n\n')
+    : '';
+
+  const system = `あなたは朝礼のファシリテーターをサポートするAIです。
+会議の音声書き起こしから「司会が発表したお題・質問」を正確に読み取り、
+そのお題に対して朝礼で実際に1分程度（200〜280文字）で話せる詳細な回答・提案を5つ生成してください。
+${referenceTranscripts.length > 0 ? '提供された過去の回答事例のスタイル・詳しさを参考にしてください。' : ''}
+
+ルール：
+- 音声書き起こしの中から司会のお題・質問を自動で特定すること
+- 各回答は実際に声に出せる自然な話し言葉にすること
+- 具体的な数字・例・理由を含めて内容を充実させること
+- 各回答は200〜280文字（約1分で話せる量）にすること
+- 必ず以下のJSON形式のみで返すこと（前後にテキスト不要）：
+
+{
+  "topic": "読み取ったお題（30字以内）",
+  "ideas": [
+    {"title": "回答タイトル（20字以内）", "desc": "1分で話せる詳細な回答文"},
+    {"title": "回答タイトル（20字以内）", "desc": "1分で話せる詳細な回答文"},
+    {"title": "回答タイトル（20字以内）", "desc": "1分で話せる詳細な回答文"},
+    {"title": "回答タイトル（20字以内）", "desc": "1分で話せる詳細な回答文"},
+    {"title": "回答タイトル（20字以内）", "desc": "1分で話せる詳細な回答文"}
+  ]
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2500,
+        system,
+        messages: [{ role: 'user', content: `以下は朝礼のGoogle Meet音声書き起こしです。お題を読み取り、1分で話せる詳細な回答を5つ生成してください：\n\n${liveTranscript}${historySection}${refSection}` }]
+      })
+    });
+
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error?.message || `HTTP ${res.status}`); }
+    const data = await res.json();
+    const text = data.content[0].text.trim();
+    let parsed;
+    try { const m = text.match(/\{[\s\S]*\}/); parsed = JSON.parse(m ? m[0] : text); }
+    catch { throw new Error('レスポンス解析失敗。再試行してください。'); }
+
+    output.innerHTML = '';
+    if (parsed.topic) {
+      const banner = document.createElement('div');
+      banner.className = 'topic-banner';
+      banner.innerHTML = `<strong>📌 読み取ったお題：</strong>${escHtml(parsed.topic)}`;
+      output.appendChild(banner);
+    }
+    const container = document.createElement('div');
+    container.className = 'ideas-container';
+    output.appendChild(container);
+
+    ['n1','n2','n3','n4','n5'].forEach((cls, i) => {
+      const idea = parsed.ideas[i];
+      if (!idea) return;
+      const sec = Math.round((idea.desc || '').length / 4.5);
+      const card = document.createElement('div');
+      card.className = 'idea-card';
+      card.innerHTML = `
+        <div class="idea-num ${cls}">${i+1}</div>
+        <div style="flex:1">
+          <div class="idea-title">${escHtml(idea.title)}</div>
+          <div class="idea-desc">${escHtml(idea.desc)}</div>
+          <div class="idea-time">📣 約${sec}秒 / ${(idea.desc||'').length}文字</div>
+        </div>`;
+      container.appendChild(card);
+      setTimeout(() => card.classList.add('visible'), 80 * i);
+    });
+
+  } catch (e) {
+    output.innerHTML = `<div class="error-msg">⚠️ ${escHtml(e.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT') {
+    e.preventDefault(); generate();
+  }
+});
+
+// ── テスト用：音声ファイル文字起こし ──
+let selectedAudioFile = null;
+
+function normalizeAudioFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const map = { 'm4a':'audio/mp4','mp3':'audio/mpeg','wav':'audio/wav','webm':'audio/webm','mp4':'audio/mp4','ogg':'audio/ogg','flac':'audio/flac','aac':'audio/aac' };
+  const type = map[ext] || file.type || 'audio/mp4';
+  const name = ext === 'm4a' ? file.name.replace('.m4a','.mp4') : file.name;
+  return new File([file], name, { type });
+}
+
+function onFileSelect(e) { const f = e.target.files[0]; if (f) setAudioFile(f); }
+function onDragOver(e) { e.preventDefault(); document.getElementById('dropZone').classList.add('drag-over'); }
+function onDragLeave() { document.getElementById('dropZone').classList.remove('drag-over'); }
+function onDrop(e) { e.preventDefault(); document.getElementById('dropZone').classList.remove('drag-over'); const f = e.dataTransfer.files[0]; if (f) setAudioFile(f); }
+
+function setAudioFile(file) {
+  selectedAudioFile = file;
+  document.getElementById('fileName').textContent = '選択中：' + file.name;
+  document.getElementById('transcribeBtn').disabled = false;
+  document.getElementById('transcribeMsg').textContent = '';
+}
+
+async function transcribeFile() {
+  if (!selectedAudioFile) return;
+  const btn = document.getElementById('transcribeBtn');
+  const msg = document.getElementById('transcribeMsg');
+  btn.disabled = true;
+  btn.textContent = '⏳ 文字起こし中…';
+  msg.style.color = '#60a5fa';
+  msg.textContent = '処理中です。しばらくお待ちください…';
+  try {
+    const signedIn = await puter.auth.isSignedIn();
+    if (!signedIn) { throw new Error('Puterにログインしてください（⚙️ 初期設定）'); }
+    const result = await puter.ai.speech2txt(normalizeAudioFile(selectedAudioFile), { language: 'ja' });
+    const text = (typeof result === 'string' ? result : result?.text || '').trim();
+    if (text) {
+      liveTranscript += (liveTranscript ? ' ' : '') + text;
+      renderLive();
+      document.getElementById('liveBox').classList.add('visible');
+      document.getElementById('liveMeta').style.display = 'flex';
+      msg.style.color = '#4ade80';
+      msg.textContent = '✅ 完了！上の「⚡ お題が出たら押す！」を押してください。';
+    } else {
+      msg.style.color = '#f87171';
+      msg.textContent = '⚠️ テキストを取得できませんでした。';
+    }
+  } catch (e) {
+    msg.style.color = '#f87171';
+    msg.textContent = '⚠️ ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ この音声を文字起こしする';
+  }
+}
+
+// ── 参考事例 ──
+async function addRefFile(e) {
+  const file = e.target.files[0]; if (!file) return; e.target.value = '';
+  const id = Date.now();
+  const list = document.getElementById('refList');
+  const item = document.createElement('div');
+  item.className = 'ref-item'; item.id = 'ref-' + id;
+  item.innerHTML = `<span class="ref-item-name">📄 ${escHtml(file.name)}</span><span class="ref-loading" id="rs-${id}">文字起こし中…</span><button class="ref-del" onclick="removeRef(${id})">✕</button>`;
+  list.appendChild(item);
+  try {
+    const signedIn = await puter.auth.isSignedIn();
+    if (!signedIn) await puter.auth.signIn();
+    const result = await puter.ai.speech2txt(normalizeAudioFile(file), { language: 'ja' });
+    const text = (typeof result === 'string' ? result : result?.text || '').trim();
+    if (text) {
+      referenceTranscripts.push(text);
+      document.getElementById('rs-'+id).textContent = '✅ 登録完了';
+      document.getElementById('rs-'+id).className = 'ref-ok';
+      document.getElementById('refStatus').textContent = `参考事例 ${referenceTranscripts.length}件 登録済み`;
+    }
+  } catch (err) {
+    document.getElementById('rs-'+id).textContent = '⚠️ ' + err.message;
+    document.getElementById('rs-'+id).className = 'ref-error';
+  }
+}
+
+function removeRef(id) {
+  const idx = referenceFiles.findIndex(f => f.id === id);
+  if (idx !== -1) { referenceFiles.splice(idx,1); referenceTranscripts.splice(idx,1); }
+  const el = document.getElementById('ref-'+id); if (el) el.remove();
+  document.getElementById('refStatus').textContent = referenceTranscripts.length > 0 ? `参考事例 ${referenceTranscripts.length}件 登録済み` : '';
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

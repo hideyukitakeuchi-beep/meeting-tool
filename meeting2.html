@@ -73,7 +73,7 @@
     background: #1a3a2a; border: 2px solid #166534; color: #4ade80;
     border-radius: 16px; padding: 18px;
     font-size: 1.1rem; font-weight: 800; font-family: inherit;
-    cursor: pointer; transition: all 0.2s; margin-bottom: 12px;
+    cursor: pointer; transition: all 0.2s; margin-bottom: 8px;
   }
   .btn-capture:hover { background: #166534; }
   .btn-capture.active {
@@ -89,6 +89,18 @@
   }
   .btn-capture.active .capture-dot { animation: blink 1s ease-in-out infinite; }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* テキスト入力ボタン */
+  .btn-text-input {
+    width: 100%; max-width: 720px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    background: #1e2a3a; border: 1.5px solid #334155; color: #94a3b8;
+    border-radius: 12px; padding: 12px;
+    font-size: 0.9rem; font-weight: 700; font-family: inherit;
+    cursor: pointer; transition: all 0.2s; margin-bottom: 12px;
+  }
+  .btn-text-input:hover { background: #1e3a5f; border-color: #3b82f6; color: #60a5fa; }
+  .btn-text-input.active { background: #1e3a5f; border-color: #3b82f6; color: #60a5fa; }
 
   .live-box {
     width: 100%; max-width: 720px; box-sizing: border-box;
@@ -245,6 +257,11 @@
   <span id="captureLabel">① まずここを押す — Meetタブの音声を共有する</span>
 </button>
 
+<!-- ─── テキスト直接入力ボタン（万が一の代替手段） ─── -->
+<button class="btn-text-input" id="textInputBtn" onclick="toggleTextInput()">
+  ✏️ 音声の代わりにテキストで入力する
+</button>
+
 <div id="chunkStatus" style="display:none;width:100%;max-width:720px;font-size:0.78rem;padding:6px 12px;border-radius:8px;margin-bottom:8px;"></div>
 
 <div style="width:100%;max-width:720px;position:relative;">
@@ -290,7 +307,6 @@
       </div>
       <div id="driveUrlStatus" style="font-size:0.75rem;color:#475569;margin-top:6px;"></div>
 
-      <!-- GASから配信されていない場合のみApps Script URL入力欄を表示 -->
       <div id="appsScriptInputWrapper" style="margin-top:8px;">
         <div style="font-size:0.72rem;color:#334155;margin-top:4px;">
           ※ <a href="https://script.google.com" target="_blank" style="color:#3b82f6;">Google Apps Script</a> の設定が必要です（<span style="cursor:pointer;text-decoration:underline dotted;color:#475569;" onclick="toggleAppsScriptHelp()">設定方法を見る</span>）
@@ -389,17 +405,12 @@
 puter.quiet = true;
 
 // ── Apps Script URL の自動検出 ──────────────────────
-// GASから配信されている場合、自分自身のURLをエンドポイントとして使う
 function getAppsScriptEndpoint() {
   const currentUrl = window.location.href;
-  // script.google.com から配信されている場合は自動検出
   if (currentUrl.includes('script.google.com')) {
     const baseUrl = currentUrl.split('?')[0];
-    // Apps Script URLのラッパーページから実際のexec URLを取得
-    // /dev または /exec で終わるURLを使う
     return baseUrl;
   }
-  // ローカル動作時は保存済みURLを使う
   return localStorage.getItem('appsScriptUrl') || '';
 }
 
@@ -465,8 +476,6 @@ function toggleAppsScriptHelp() {
 async function loadFromDriveUrl() {
   const folderUrl = document.getElementById('driveUrlInput').value.trim();
   const statusEl = document.getElementById('driveUrlStatus');
-
-  // Apps Script エンドポイントを自動検出または保存値から取得
   const appsScriptUrl = getAppsScriptEndpoint();
 
   if (!folderUrl || !folderUrl.includes('drive.google.com')) {
@@ -571,6 +580,7 @@ function showHistoryMsg(msg, color) {
 // ── 状態 ──
 let apiKey = '';
 let isCapturing = false;
+let isTextMode = false;
 let displayStream = null;
 let mediaRecorder = null;
 let audioChunks = [];
@@ -588,7 +598,6 @@ window.addEventListener('load', () => {
   const savedDriveUrl = localStorage.getItem('driveUrl');
   if (savedDriveUrl) document.getElementById('driveUrlInput').value = savedDriveUrl;
 
-  // GASから配信されている場合はApps Script URL入力欄を非表示
   if (window.location.href.includes('script.google.com')) {
     document.getElementById('appsScriptInputWrapper').style.display = 'none';
   }
@@ -635,12 +644,47 @@ function updateSetupBadge() {
   }
 }
 
+// ── テキスト入力モード ──
+function toggleTextInput() {
+  isTextMode = !isTextMode;
+  const btn = document.getElementById('textInputBtn');
+  const liveBox = document.getElementById('liveBox');
+  const liveMeta = document.getElementById('liveMeta');
+
+  if (isTextMode) {
+    // 音声キャプチャ中なら停止
+    if (isCapturing) stopCapture();
+    btn.classList.add('active');
+    btn.textContent = '✏️ テキスト入力中（もう一度押すと閉じる）';
+    liveBox.placeholder = 'お題をここに直接入力してください（例：今週頑張ったことを教えてください）';
+    liveBox.classList.add('visible');
+    liveMeta.style.display = 'flex';
+    liveBox.focus();
+  } else {
+    btn.classList.remove('active');
+    btn.textContent = '✏️ 音声の代わりにテキストで入力する';
+    liveBox.placeholder = '音声を認識するとここに表示されます…\n✏️ 間違いがあれば直接編集できます（例：他社→他者）';
+    if (!liveTranscript) {
+      liveBox.classList.remove('visible');
+      liveMeta.style.display = 'none';
+    }
+  }
+}
+
 // ── 音声キャプチャ ──
 async function toggleCapture() {
   if (isCapturing) { stopCapture(); } else { await startCapture(); }
 }
 
 async function startCapture() {
+  // テキスト入力モード中なら解除
+  if (isTextMode) {
+    isTextMode = false;
+    const btn = document.getElementById('textInputBtn');
+    btn.classList.remove('active');
+    btn.textContent = '✏️ 音声の代わりにテキストで入力する';
+  }
+
   try {
     displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
     const audioTracks = displayStream.getAudioTracks();
@@ -685,8 +729,10 @@ function setCaptureUI(on) {
   } else {
     btn.classList.remove('active');
     label.textContent = '① まずここを押す — Meetタブの音声を共有する';
-    liveBox.classList.remove('visible');
-    liveMeta.style.display = 'none';
+    if (!isTextMode && !liveTranscript) {
+      liveBox.classList.remove('visible');
+      liveMeta.style.display = 'none';
+    }
   }
 }
 
@@ -785,7 +831,7 @@ async function generate() {
     return;
   }
   if (!liveTranscript.trim()) {
-    output.innerHTML = '<div class="error-msg">⚠️ まだ音声が認識されていません。① のボタンを押してMeetのタブ音声を共有してください。</div>';
+    output.innerHTML = '<div class="error-msg">⚠️ まだ内容が入力されていません。音声キャプチャを開始するか、テキストで直接入力してください。</div>';
     return;
   }
 
